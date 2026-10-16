@@ -1929,7 +1929,13 @@ html body button.waeiProgramsEntry {
 html body button.waeiProgramsEntry small {color:#fff!important;background-color:rgba(255,255,255,.17)!important;}
 /* زخارف الورقتين الموجودة في الطرفين تبقى كما هي */
 </style>
-<style id="waeiAskAfterClosingStyle">#waeiProgramsPanel .wpAskWaeiAfterClosing{display:block!important;width:min(100%,560px)!important;max-width:560px!important;margin:22px auto!important;border-radius:18px!important;overflow:hidden!important;cursor:pointer!important}#waeiProgramsPanel .wpAskWaeiAfterClosing img{display:block;width:100%;height:auto}@media print{#waeiProgramsPanel .wpAskWaeiAfterClosing{display:none!important}}</style></head>
+<style id="waeiAskAfterClosingStyle">#waeiProgramsPanel .wpAskWaeiAfterClosing{display:block!important;width:min(100%,560px)!important;max-width:560px!important;margin:22px auto!important;border-radius:18px!important;overflow:hidden!important;cursor:pointer!important}#waeiProgramsPanel .wpAskWaeiAfterClosing img{display:block;width:100%;height:auto}@media print{#waeiProgramsPanel .wpAskWaeiAfterClosing{display:none!important}}</style><style id="waei-report-only-layout-fix">
+/* Hide the landing hero only while the paid educational report is visible. */
+body:has(#result:not(.hidden)) > .medicalHero {
+  display: none !important;
+}
+</style>
+</head>
 
 
     <body>
