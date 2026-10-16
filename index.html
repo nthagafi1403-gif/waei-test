@@ -1954,6 +1954,14 @@ body.waeiViewingReport > main {padding-top:0!important;margin-top:0!important;}
 body:has(main > #result:not(.hidden)) > main > #result,
 body.waeiViewingReport > main > #result {display:block!important;margin-top:0!important;}
 </style>
+<style id="waei-report-definitive-20261016">
+/* Isolate the report while retaining all original site functionality. */
+html body.waeiViewingReport > section.medicalHero,
+html body.waeiViewingReport > footer { display:none !important; }
+html body.waeiViewingReport > main > :not(#result) { display:none !important; }
+html body.waeiViewingReport > main { margin-top:0 !important; padding-top:12px !important; }
+html body.waeiViewingReport > main > #result { display:block !important; margin-top:0 !important; }
+</style>
 </head>
 
 
@@ -6532,6 +6540,28 @@ restoreProgramPayment();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
   else init();
+})();
+</script>
+<script id="waei-report-definitive-controller-20261016">
+(function(){
+  function update(){
+    var report=document.getElementById('result');
+    if(!report)return;
+    var active=!report.classList.contains('hidden');
+    var was=document.body.classList.contains('waeiViewingReport');
+    document.body.classList.toggle('waeiViewingReport',active);
+    var hero=document.querySelector('body > section.medicalHero');
+    if(hero)hero.style.setProperty('display',active?'none':'','important');
+    if(active&&!was){window.scrollTo({top:0,left:0,behavior:'instant'});}
+  }
+  function start(){
+    var report=document.getElementById('result');
+    if(!report)return;
+    new MutationObserver(update).observe(report,{attributes:true,attributeFilter:['class']});
+    update();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
+  else start();
 })();
 </script>
 </body>
