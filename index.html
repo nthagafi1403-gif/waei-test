@@ -6395,6 +6395,20 @@ function questions(i){current=i;reset();document.getElementById('waeiProgramsPan
 
 const WAEI_PROGRAMS_API='https://waei-programs-api.nthagafi1403.workers.dev';
 const WAEI_PAYMENT_STORAGE='waei_program_payment_v1';
+const WAEI_ORDERS_STORAGE='waei_program_orders_v2';
+function savedOrders(){
+ let items={};try{items=JSON.parse(localStorage.getItem(WAEI_ORDERS_STORAGE)||'{}')||{}}catch{}
+ for(const store of [localStorage,sessionStorage]){
+  try{const old=JSON.parse(store.getItem(WAEI_PAYMENT_STORAGE)||'null');if(old?.order_id&&old?.access_token)items[old.order_id]=old}catch{}
+ }
+ return items;
+}
+function rememberOrder(order){
+ const items=savedOrders();items[order.order_id]=order;
+ localStorage.setItem(WAEI_ORDERS_STORAGE,JSON.stringify(items));
+ localStorage.setItem(WAEI_PAYMENT_STORAGE,JSON.stringify(order));
+ sessionStorage.setItem(WAEI_PAYMENT_STORAGE,JSON.stringify(order));
+}
 async function apiCall(path,data){
  const response=await fetch(WAEI_PROGRAMS_API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
  const result=await response.json().catch(()=>({}));
@@ -6406,33 +6420,36 @@ async function startCheckout(i,button){
  try{
   const result=await apiCall('/api/programs/checkout',{program_id:String(i)});
   if(!result.order_id||!result.access_token||!result.payment_url)throw new Error('استجابة الدفع غير مكتملة');
-  const pending=JSON.stringify({order_id:result.order_id,access_token:result.access_token,program_id:String(i)});
-  localStorage.setItem(WAEI_PAYMENT_STORAGE,pending);
-  sessionStorage.setItem(WAEI_PAYMENT_STORAGE,pending);
+  rememberOrder({order_id:result.order_id,access_token:result.access_token,program_id:String(i)});
   window.location.assign(result.payment_url);
  }catch(err){alert('لم يبدأ الدفع. '+(err.message||'حاول مجددًا'));button.disabled=false;button.textContent='انصحني'}
 }
 async function restoreProgramPayment(){
  const params=new URLSearchParams(location.search);
- if(params.get('program_payment')!=='return')return;
- const saved=sessionStorage.getItem(WAEI_PAYMENT_STORAGE)||localStorage.getItem(WAEI_PAYMENT_STORAGE);
- window.openWaeiPrograms();reset();heading.textContent='التحقق من الدفع';subtitle.textContent='يرجى الانتظار...';
- const status=e('p','نتحقق من العملية قبل عرض النصائح.','wpMuted');panel.append(status);
- if(!saved){status.textContent='تعذر استعادة بيانات الطلب. افتح الموقع من نفس المتصفح الذي أجريت منه الدفع، أو تواصل مع الدعم مع رقم العملية.';return}
- try{
-  const order=JSON.parse(saved);
-  if(!order.order_id||!order.access_token||params.get('order_id')!==order.order_id)throw new Error('بيانات الطلب لا تتطابق');
-  const verification=await apiCall('/api/programs/verify',{order_id:order.order_id,access_token:order.access_token});
-  if(verification.verified!==true)throw new Error('لم يتم تأكيد الدفع بعد');
-  const report=await apiCall('/api/programs/report',{order_id:order.order_id,access_token:order.access_token});
-  if(String(report.program_id??order.program_id)!==String(order.program_id))throw new Error('البرنامج المدفوع لا يتطابق مع التقرير');
-  const rawTips=report.tips||report.tips_json;
-  const tips=typeof rawTips==='string'?JSON.parse(rawTips):rawTips;
-  if(!Array.isArray(tips)||tips.length!==25)throw new Error('تعذر تحميل النصائح كاملة');
-  current=Number(order.program_id);
-  results(tips,report.closing_message||report.closingMessage||'');
-  history.replaceState(null,'',location.pathname+location.hash);
- }catch(err){status.textContent='تعذر فتح النصائح: '+(err.message||'خطأ غير معروف')+'. إذا تم الخصم لا تدفع مرة ثانية؛ تواصل مع الدعم.'}
+ const paymentReturn=params.get('program_payment');
+ if(paymentReturn!=='return'&&paymentReturn!=='back')return;
+ const orderId=params.get('order_id');
+ const orders=savedOrders();const order=orderId?orders[orderId]:null;
+ window.openWaeiPrograms();reset();heading.textContent='استعادة عملية الدفع';subtitle.textContent='نتحقق من حالة العملية لدى ميسر';
+ const status=e('p','جارٍ التحقق من الدفع...','wpMuted');panel.append(status);
+ if(!order?.access_token){status.textContent='تعذر العثور على بيانات هذه العملية في المتصفح. لا تدفع مرة أخرى؛ تواصل مع الدعم مع رقم العملية: '+(orderId||'غير متوفر');return}
+ const retry=e('button','إعادة التحقق من الدفعة نفسها','wpMain');retry.type='button';panel.append(retry);
+ async function check(){
+  retry.disabled=true;status.textContent='جارٍ التحقق من الدفعة السابقة دون خصم جديد...';
+  try{
+   const verification=await apiCall('/api/programs/verify',{order_id:order.order_id,access_token:order.access_token});
+   if(verification.verified!==true){status.textContent='لم يؤكد ميسر دفع هذه الفاتورة بعد. إذا خُصم المبلغ، انتظر قليلًا ثم اضغط إعادة التحقق. لا تدفع مرة ثانية.';return}
+   const report=await apiCall('/api/programs/report',{order_id:order.order_id,access_token:order.access_token});
+   if(String(report.program_id)!==String(order.program_id))throw new Error('البرنامج المدفوع لا يتطابق مع التقرير');
+   const rawTips=report.tips||report.tips_json;
+   const tips=typeof rawTips==='string'?JSON.parse(rawTips):rawTips;
+   if(!Array.isArray(tips)||tips.length!==25)throw new Error('تعذر تحميل النصائح كاملة');
+   current=Number(order.program_id);results(tips,report.closing_message||report.closingMessage||'');
+   history.replaceState(null,'',location.pathname+location.hash);
+  }catch(err){status.textContent='تعذر استعادة النصائح: '+(err.message||'خطأ غير معروف')+'. لا تدفع مرة ثانية.'}
+  finally{retry.disabled=false}
+ }
+ retry.onclick=check;await check();
 }
 function results(tips,closingMessage){
  reset();document.getElementById('waeiProgramsPanel').classList.remove('wpListing');
