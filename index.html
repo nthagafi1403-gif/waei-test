@@ -6403,14 +6403,16 @@ async function startCheckout(i,button){
  try{
   const result=await apiCall('/api/programs/checkout',{program_id:String(i)});
   if(!result.order_id||!result.access_token||!result.payment_url)throw new Error('استجابة الدفع غير مكتملة');
-  sessionStorage.setItem(WAEI_PAYMENT_STORAGE,JSON.stringify({order_id:result.order_id,access_token:result.access_token,program_id:String(i)}));
+  const pending=JSON.stringify({order_id:result.order_id,access_token:result.access_token,program_id:String(i)});
+  localStorage.setItem(WAEI_PAYMENT_STORAGE,pending);
+  sessionStorage.setItem(WAEI_PAYMENT_STORAGE,pending);
   window.location.assign(result.payment_url);
  }catch(err){alert('لم يبدأ الدفع. '+(err.message||'حاول مجددًا'));button.disabled=false;button.textContent='انصحني'}
 }
 async function restoreProgramPayment(){
  const params=new URLSearchParams(location.search);
  if(params.get('program_payment')!=='return')return;
- const saved=sessionStorage.getItem(WAEI_PAYMENT_STORAGE);
+ const saved=sessionStorage.getItem(WAEI_PAYMENT_STORAGE)||localStorage.getItem(WAEI_PAYMENT_STORAGE);
  window.openWaeiPrograms();reset();heading.textContent='التحقق من الدفع';subtitle.textContent='يرجى الانتظار...';
  const status=e('p','نتحقق من العملية قبل عرض النصائح.','wpMuted');panel.append(status);
  if(!saved){status.textContent='تعذر استعادة بيانات الطلب. افتح الموقع من نفس المتصفح الذي أجريت منه الدفع، أو تواصل مع الدعم مع رقم العملية.';return}
