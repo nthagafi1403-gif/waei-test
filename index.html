@@ -1935,6 +1935,11 @@ body:has(#result:not(.hidden)) > .medicalHero {
   display: none !important;
 }
 </style>
+<style id="waei-report-isolated-v2">
+/* Report-only view: hide the six home tiles and the top hero. */
+body.waeiViewingReport .medicalHero { display:none !important; }
+body.waeiViewingReport #result { display:block !important; }
+</style>
 </head>
 
 
@@ -4215,6 +4220,8 @@ const MOYASAR_CALLBACK_URL="https://nthagafi1403-gif.github.io/";
     .getElementById(id)
     .classList.remove("hidden");
 
+    // The paid report must occupy the page alone, without the landing hero.
+    document.body.classList.toggle('waeiViewingReport', id === 'result');
 
     window.scrollTo({
 
@@ -6493,5 +6500,23 @@ window.openWaeiPrograms=function(){overlay.classList.add('active');document.body
 overlay.addEventListener('click',ev=>{if(ev.target===overlay)window.closeWaeiPrograms()});document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&overlay.classList.contains('active'))window.closeWaeiPrograms()});
 restoreProgramPayment();
 })();</script>
+<script id="waei-report-isolated-sync">
+(function(){
+  function sync(){
+    var result=document.getElementById('result');
+    if(!result) return;
+    var visible=!result.classList.contains('hidden') && getComputedStyle(result).display!=='none';
+    document.body.classList.toggle('waeiViewingReport',visible);
+  }
+  function init(){
+    var result=document.getElementById('result');
+    if(!result)return;
+    new MutationObserver(sync).observe(result,{attributes:true,attributeFilter:['class','style']});
+    sync();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
 </body>
 </html>
