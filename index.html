@@ -1940,6 +1940,20 @@ body:has(#result:not(.hidden)) > .medicalHero {
 body.waeiViewingReport .medicalHero { display:none !important; }
 body.waeiViewingReport #result { display:block !important; }
 </style>
+
+<style id="waei-report-visibility-final">
+/* Report is a child of main, while the hero is a sibling of main. */
+body:has(main > #result:not(.hidden)) > .medicalHero,
+body.waeiViewingReport > .medicalHero,
+body:has(main > #result:not(.hidden)) > footer,
+body.waeiViewingReport > footer {display:none!important;}
+body:has(main > #result:not(.hidden)) > main > :not(#result),
+body.waeiViewingReport > main > :not(#result) {display:none!important;}
+body:has(main > #result:not(.hidden)) > main,
+body.waeiViewingReport > main {padding-top:0!important;margin-top:0!important;}
+body:has(main > #result:not(.hidden)) > main > #result,
+body.waeiViewingReport > main > #result {display:block!important;margin-top:0!important;}
+</style>
 </head>
 
 
@@ -6506,7 +6520,9 @@ restoreProgramPayment();
     var result=document.getElementById('result');
     if(!result) return;
     var visible=!result.classList.contains('hidden') && getComputedStyle(result).display!=='none';
+    var wasVisible=document.body.classList.contains('waeiViewingReport');
     document.body.classList.toggle('waeiViewingReport',visible);
+    if(visible && !wasVisible) requestAnimationFrame(function(){window.scrollTo(0,0);});
   }
   function init(){
     var result=document.getElementById('result');
