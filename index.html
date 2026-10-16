@@ -5786,6 +5786,9 @@ const MOYASAR_CALLBACK_URL="https://nthagafi1403-gif.github.io/";
     );
 
 
+    // Payments for the 13 programs are handled by restoreProgramPayment().
+    if (params.get("program_payment") === "return" || params.get("program_payment") === "back") return;
+
     const paymentId=
 
     params.get(
